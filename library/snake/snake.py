@@ -1,25 +1,14 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # ## Imports
 
-# In[12]:
-
-
-from curses import wrapper
+# from curses import wrapper
 from random import randint, choice
 import time
 
 import threading
 from pynput import keyboard
-### For lightweight version
-# from IPython.display import clear_output
 
 
 # ## Classes
-
-# In[13]:
-
 
 class GameManager():
     def __init__(self):
@@ -75,19 +64,16 @@ class GameManager():
             self.snake.set_head_points(direction)
 
 
-# In[14]:
-
-
 class Map():
     def __init__(self, size = 16):
         self.size = size
         self.apple = False
         self.grid = []
 
-    def set_apple(apple):
+    def set_apple(self, apple):
         self.apple = apple
 
-    def set_grid(grid):
+    def set_grid(self, grid):
         self.grid = grid
 
     def get_grid(self):
@@ -117,9 +103,6 @@ class Map():
         if not y:
             return 'Game Won!'
         self.grid[y][x] = '*'
-
-
-# In[15]:
 
 
 class Snake():
@@ -182,9 +165,6 @@ class Snake():
         self.body_coords.append(self.get_next_point())
 
 
-# In[16]:
-
-
 class Apple():
     def __init__(self, map):
         self.coords = []
@@ -231,9 +211,6 @@ class Apple():
 
 # ### Refreshrate function
 
-# In[17]:
-
-
 def update_game():
     while True:
         print("\033[H\033[J", end="")
@@ -244,10 +221,9 @@ def update_game():
         game.step()
 
 
+
+
 # ## Application
-
-# In[18]:
-
 
 if __name__ == "__main__":
     game = GameManager()
@@ -261,47 +237,3 @@ if __name__ == "__main__":
 
     game_thread.join()
     listener.join()
-
-
-# In[22]:
-
-
-# game = GameManager()
-# game.initialise()
-
-
-# In[35]:
-
-
-# for row in game.get_gamefield():
-#     print(row)
-
-
-# In[34]:
-
-
-# game.step()
-
-
-# In[33]:
-
-
-# game.snake_direction('down')
-
-
-# ### Testing 
-
-# ### Apple generation test
-
-# In[31]:
-
-
-map = [[' ' for count in range(size)] for _ in range(size)]
-for i in range(size**2):
-    y, x = generate_apple_coordinates(map)
-    map[y][x] = '*'
-    for row in map:
-        print(row)
-    time.sleep(0.1)
-    clear_output(wait=True)
-

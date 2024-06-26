@@ -6,16 +6,18 @@ import time
 from pynput import keyboard
 import threading
 import sys
+import subprocess
 
 class Screen():
     def __init__(self):
         self.manager = Menu()
+        self.state = 0
         self.chcl = '\033[43m'
         self.defcl = '\033[0m'
         self.pghist = []
 
-        # Game options
-        self.size = 12
+    def get_state(self):
+        return self.state
 
     def plot(self):
         for count in range(len(self.manager.get_options())):
@@ -40,11 +42,17 @@ class Screen():
         else:
             self.pghist.append(self.manager.get_options())
             if self.manager.options[self.manager.choice] == 'Choose Game':
+                self.state = 1
                 self.manager.set_options(self.parse_games())
             elif self.manager.options[self.manager.choice] == 'Settings':
+                self.state = 2
                 self.manager.set_options(self.parse_games())
             elif self.manager.options[self.manager.choice] == 'Exit':
                 sys.exit()
+            elif self.state == 1 and self.manager.options[self.manager.choice] == 'snake':
+                self.state = 555
+                subprocess.run(['python', os.path.dirname(os.path.abspath(__file__)) + '/library/snake/snake.py'])
+                self.state = 1
 
     def parse_games(self):
         home_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,9 +82,12 @@ manager = Screen()
 
 def update_screen():
     while True:
-        print("\033[H\033[J", end="")
-        manager.plot()
-        time.sleep(.1)
+        if manager.state == 0:
+            print("\033[H\033[J", end="")
+            manager.plot()
+            time.sleep(.1)
+        else:
+            pass
 
 
 

@@ -1,26 +1,37 @@
-# ## Imports
-
-# from curses import wrapper
+from curses import wrapper
 from random import randint, choice
 import time
+import os
+import ast
+import sys
 
 import threading
 from pynput import keyboard
 
 
-# ## Classes
+### Classes ###
 
 class GameManager():
     def __init__(self):
         self.map = False
         self.snake = False
         self.apple = False
+        self.state = 0
 
     def get_gamefield(self):
         return self.map.get_grid()
     
+    def get_state(self):
+        return self.state
+    
     def initialise(self):
-        size = int(input("Input Preferred Size: "))
+        
+        config = os.path.dirname(os.path.abspath(__file__)) + '/config.txt'
+
+        with open(config, 'r') as file:
+            contents = file.read()
+            size = ast.literal_eval(contents)['size']
+
         self.map = Map(size)
         self.map.create_grid()
         self.snake = Snake(self.map)
@@ -37,8 +48,6 @@ class GameManager():
         if self.map.get_grid():
             if not self.apple:
                 self.reset_apple()
-            # self.map.draw_snake(self.snake)
-            # self.map.draw_apple(self.apple)
 
     def draw_objects(self):
         self.map.draw_snake(self.snake)
@@ -46,15 +55,23 @@ class GameManager():
 
     def step(self):
         if self.map and self.snake and self.apple:
-            if self.snake.get_next_point() != self.apple.get_coords():
-                self.re_initialise()
-                self.snake.crawl()
-                self.draw_objects()
-            elif self.snake.get_next_point() == self.apple.get_coords():
-                self.reset_apple()
-                self.re_initialise()
-                self.snake.evolve()
-                self.draw_objects()
+            if self.snake.get_next_point()[0] in range(self.map.size) and self.snake.get_next_point()[1] in range(self.map.size) and self.snake.get_next_point() not in self.snake.get_body_coords():
+
+                if self.snake.get_length() == self.map.size ** 2:
+                    self.state = 2
+
+                if self.snake.get_next_point() != self.apple.get_coords():
+                    self.re_initialise()
+                    self.snake.crawl()
+                    self.draw_objects()
+                elif self.snake.get_next_point() == self.apple.get_coords():
+                    self.reset_apple()
+                    self.re_initialise()
+                    self.snake.evolve()
+                    self.draw_objects()
+
+            else:
+                self.state = 1
 
     def reset_apple(self):
         self.apple.generate_apple_coordinates(self.map)
@@ -62,7 +79,6 @@ class GameManager():
     def snake_direction(self, direction):
         if direction in [keyboard.Key.up, keyboard.Key.right, keyboard.Key.down, keyboard.Key.left]:
             self.snake.set_head_points(direction)
-
 
 class Map():
     def __init__(self, size = 16):
@@ -104,7 +120,6 @@ class Map():
             return 'Game Won!'
         self.grid[y][x] = '*'
 
-
 class Snake():
     def __init__(self, map):
         self.init_y = int(len(map.get_grid())/2)
@@ -120,14 +135,16 @@ class Snake():
         self.body_coords = coords
 
     def set_head_points(self, direction):
-        if direction == keyboard.Key.up:
+        if direction == keyboard.Key.up and self.head_points != 'down':
             direction = 'up'
-        elif direction == keyboard.Key.right:
+        elif direction == keyboard.Key.right and self.head_points != 'left':
             direction = 'right'
-        elif direction == keyboard.Key.down:
+        elif direction == keyboard.Key.down and self.head_points != 'up':
             direction = 'down'
-        elif direction == keyboard.Key.left:
+        elif direction == keyboard.Key.left and self.head_points != 'right':
             direction = 'left'
+        else:
+            direction = self.head_points
 
         if direction:
             self.head_points = direction
@@ -163,7 +180,6 @@ class Snake():
             self.body_coords.pop(0)
 
         self.body_coords.append(self.get_next_point())
-
 
 class Apple():
     def __init__(self, map):
@@ -209,21 +225,31 @@ class Apple():
         self.coords = [y, x]
 
 
-# ### Refreshrate function
+### Refreshrate function ###
 
 def update_game():
     while True:
-        print("\033[H\033[J", end="")
-        # clear_output(wait=True)
-        for row in game.get_gamefield():
-            print(row)
-        time.sleep(1)
-        game.step()
+        state = game.get_state()
+        if state == 0:
+            print("\033[H\033[J", end="")
+            # clear_output(wait=True)
+            for row in game.get_gamefield():
+                print(row)
+            time.sleep(.5)
+            game.step()
+        elif state == 1:
+            print("\033[H\033[J", end="")
+            print('Game Over!')
+            time.sleep(1)
+            sys.exit()
+        elif state == 2:
+            print("\033[H\033[J", end="")
+            print('Good Game!')
+            time.sleep(1)
+            sys.exit()
 
 
-
-
-# ## Application
+### Application
 
 if __name__ == "__main__":
     game = GameManager()

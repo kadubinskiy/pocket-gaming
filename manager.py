@@ -1,12 +1,11 @@
 
-        # print("\033[H\033[J", end="")
-
 import os
 import time
 from pynput import keyboard
 import threading
 import sys
 import subprocess
+import ast
 
 class Screen():
     def __init__(self):
@@ -21,10 +20,25 @@ class Screen():
 
     def plot(self):
         for count in range(len(self.manager.get_options())):
-            if count == self.manager.get_choice():
-                print(self.chcl+self.manager.get_options()[count]+self.defcl)
-            else:
-                print(self.manager.get_options()[count])
+            if type(self.manager.get_options()[count]) == str:
+                if count == self.manager.get_choice():
+                    print(self.chcl + self.manager.get_options()[count] + self.defcl)
+                else:
+                    print(self.manager.get_options()[count])
+            elif type(self.manager.get_options()[count]) == list:
+                if count == self.manager.get_choice():
+                    row = ''
+                    for cols in self.manager.get_options()[count]:
+                        row += self.chcl + str(cols) + '   '
+                    row = row[:-3]
+                    row += self.defcl
+                    print(row)
+                else:
+                    row = ''
+                    for cols in self.manager.get_options()[count]:
+                        row += str(cols) + '    '
+                        row = row[:-3]
+                    print(row)
 
     def cycle_choice(self, direction):
         if direction == keyboard.Key.up:
@@ -49,15 +63,39 @@ class Screen():
                 self.manager.set_options(self.parse_games())
             elif self.manager.options[self.manager.choice] == 'Exit':
                 sys.exit()
-            elif self.state == 1 and self.manager.options[self.manager.choice] == 'snake':
+            elif self.state == 1:
+                choice = self.manager.options[self.manager.choice]
                 self.state = 555
-                subprocess.run(['python', os.path.dirname(os.path.abspath(__file__)) + '/library/snake/snake.py'])
+                subprocess.run(['python', os.path.dirname(os.path.abspath(__file__)) + f'/library/{choice}/{choice}.py'])
                 self.state = 1
+            elif self.state == 2:
+                choice = self.manager.options[self.manager.choice]
+                self.state = 20
+                settings, values, descriptions = self.parse_config(choice)
+                all_options, option = [], []
+                for count in range(len(settings)):
+                    option.append(settings[count])
+                    option.append(values[count])
+                    option.append(descriptions[count])
+                    all_options.append(option)
+                self.manager.set_options(all_options)
+            # elif self.state == 20:
 
     def parse_games(self):
         home_dir = os.path.dirname(os.path.abspath(__file__))
         library = os.listdir(home_dir + '/library')
         return library
+    
+    def parse_config(self, game):
+        path = os.path.dirname(os.path.abspath(__file__)) + f'/library/{game}/config.txt'
+        with open(path, 'r') as file:
+            contents = file.read()
+            config = ast.literal_eval(contents)
+        settings, values, descriptions = list(config.keys()), [], []
+        for setting in settings:
+            values.append(config[setting]['value'])
+            descriptions.append(config[setting]['description'])
+        return settings, values, descriptions
 
 
 class Menu():
@@ -82,7 +120,7 @@ manager = Screen()
 
 def update_screen():
     while True:
-        if manager.state == 0:
+        if manager.state not in [555]:
             print("\033[H\033[J", end="")
             manager.plot()
             time.sleep(.1)

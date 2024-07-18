@@ -30,7 +30,7 @@ class GameManager():
 
         with open(config, 'r') as file:
             contents = file.read()
-            size = ast.literal_eval(contents)['size']
+            size = ast.literal_eval(contents)['Size']['value']
 
         self.map = Map(size)
         self.map.create_grid()

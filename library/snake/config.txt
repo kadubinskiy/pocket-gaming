@@ -1,1 +1,1 @@
-{'size': 16}
+{'Size': {'value': 16, 'description': 'Size of the gamefield.'}}

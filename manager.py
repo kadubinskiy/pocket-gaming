@@ -1,4 +1,3 @@
-
 import os
 import time
 from pynput import keyboard
@@ -13,7 +12,7 @@ class Screen():
         self.state = 0
         self.chcl = '\033[43m'
         self.defcl = '\033[0m'
-        self.pghist = []
+        self.statehist = [0, 0, 0]
 
     def get_state(self):
         return self.state
@@ -40,6 +39,27 @@ class Screen():
                         row = row[:-3]
                     print(row)
 
+    def state_change(self, state, choice = False):
+        if state == 0:
+            self.state = 0
+            self.manager.set_options(['Choose Game', 'Settings', 'Exit'])
+        elif state == 1:
+            self.state = 1
+            self.manager.set_options(self.parse_games())
+        elif state == 2:
+            self.state = 2
+            self.manager.set_options(self.parse_games())
+        elif state == 3:
+            self.state = 666
+        elif state == 20 and choice:
+            self.state = 20
+            self.manager.set_options(self.parse_config(choice))
+        elif state == 555 and choice:
+            self.state = 555
+            subprocess.run(['python', os.path.dirname(os.path.abspath(__file__)) + f'/library/{choice}/{choice}.py'])
+            self.state = 1
+        self.manager.choice = 0
+
     def cycle_choice(self, direction):
         if direction == keyboard.Key.up:
             self.manager.choice = (self.manager.choice - 1) % len(self.manager.options)
@@ -48,38 +68,26 @@ class Screen():
         elif direction == keyboard.Key.right or direction == keyboard.Key.enter:
             self.set_manager_options()
         elif direction == keyboard.Key.left or direction == keyboard.Key.backspace:
-            self.set_manager_options(self.pghist.pop())
+            self.set_manager_options(self.statehist.pop())
             
     def set_manager_options(self, option=False):
-        if option:
-            self.manager.set_options(option)
+        if type(option) == int:
+            self.state_change(option)
         else:
-            self.pghist.append(self.manager.get_options())
-            if self.manager.options[self.manager.choice] == 'Choose Game':
-                self.state = 1
-                self.manager.set_options(self.parse_games())
-            elif self.manager.options[self.manager.choice] == 'Settings':
-                self.state = 2
-                self.manager.set_options(self.parse_games())
-            elif self.manager.options[self.manager.choice] == 'Exit':
-                sys.exit()
+            self.statehist.append(self.state)
+            if self.state == 0:
+                if self.manager.options[self.manager.choice] == 'Choose Game':
+                    self.state_change(1)
+                elif self.manager.options[self.manager.choice] == 'Settings':
+                    self.state_change(2)
+                elif self.manager.options[self.manager.choice] == 'Exit':
+                    self.state_change(3)
             elif self.state == 1:
                 choice = self.manager.options[self.manager.choice]
-                self.state = 555
-                subprocess.run(['python', os.path.dirname(os.path.abspath(__file__)) + f'/library/{choice}/{choice}.py'])
-                self.state = 1
+                self.state_change(555, choice)
             elif self.state == 2:
                 choice = self.manager.options[self.manager.choice]
-                self.state = 20
-                settings, values, descriptions = self.parse_config(choice)
-                all_options, option = [], []
-                for count in range(len(settings)):
-                    option.append(settings[count])
-                    option.append(values[count])
-                    option.append(descriptions[count])
-                    all_options.append(option)
-                self.manager.set_options(all_options)
-            # elif self.state == 20:
+                self.state_change(20, choice)
 
     def parse_games(self):
         home_dir = os.path.dirname(os.path.abspath(__file__))
@@ -95,7 +103,13 @@ class Screen():
         for setting in settings:
             values.append(config[setting]['value'])
             descriptions.append(config[setting]['description'])
-        return settings, values, descriptions
+        all_options, option = [], []
+        for count in range(len(settings)):
+            option.append(settings[count])
+            option.append(values[count])
+            option.append(descriptions[count])
+            all_options.append(option)
+        return all_options
 
 
 class Menu():
@@ -120,10 +134,12 @@ manager = Screen()
 
 def update_screen():
     while True:
-        if manager.state not in [555]:
+        if manager.state not in [555, 666]:
             print("\033[H\033[J", end="")
             manager.plot()
             time.sleep(.1)
+        elif manager.state in [666]:
+            sys.exit()
         else:
             pass
 
